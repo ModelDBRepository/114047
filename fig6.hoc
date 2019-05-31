@@ -1,0 +1,138 @@
+// fig6.hoc
+// makes an approximation to fig6 by running for simulations for 10 secs
+
+objref g[2]
+for i=0,1 g[i] = new gap()
+
+dend4a[6] g[0].loc(1)	/*distal end of a*/
+dend4b[6] g[1].loc(1)  /*proximal end of b*/
+dend4a[6] g[0].del=1
+dend4b[6] g[1].del=1
+setpointer g[0].vgap, dend4b[6].v(1)
+setpointer g[1].vgap, dend4a[6].v(1)
+
+objref resistances, graphs[4]
+
+resistances = new Vector()
+resistances.append(3.33e4, 3.33e2, 8.33, 4.17)
+/*
+3.33e4 // 30 pS in Mega Ohms ( 1/(30e-12) Ohms )
+3.33e2 // 3000 pS in Mega Ohms ( 1/(3000e-12) Ohms )
+8.33 // 120000 pS in Mega Ohms ( 1/(120000e-12) Ohms )
+4.17 // 240000 pS in Mega Ohms ( 1/(240000e-12) Ohms )
+*/
+
+objref stim[2]
+
+objref cella_soma_vec, cella_prox_vec, cella_med_vec, cella_dist_vec
+objref cellb_soma_vec, cellb_prox_vec, cellb_med_vec, cellb_dist_vec
+objref t_vec
+
+cella_soma_vec = new Vector()
+cella_prox_vec = new Vector()
+cella_med_vec = new Vector()
+cella_dist_vec = new Vector()
+
+cellb_soma_vec = new Vector()
+cellb_prox_vec = new Vector()
+cellb_med_vec = new Vector()
+cellb_dist_vec = new Vector()
+
+cella_soma_vec.record(&somaa.v(0.5),dt)
+cella_prox_vec.record(&dend4a[6].v(0.132), dt)
+cella_med_vec.record(&dend4a[6].v(0.485), dt)
+cella_dist_vec.record(&dend4a[6].v(1), dt)
+cellb_soma_vec.record(&somab.v(0.5),dt)
+cellb_prox_vec.record(&dend4b[6].v(0.132), dt)
+cellb_med_vec.record(&dend4b[6].v(0.485), dt)
+cellb_dist_vec.record(&dend4b[6].v(1), dt)
+
+t_vec = new Vector()
+t_vec.record(&t,dt)
+
+
+proc myrun() {
+  stdinit()
+  resize_vec(0)
+  run()
+}
+
+proc record_on() {
+  // setup to record graphss
+
+  cella_soma_vec.record(&somaa.v(0.5),dt)
+  cella_prox_vec.record(&dend4a[6].v(0.132), dt)
+  cella_med_vec.record(&dend4a[6].v(0.485), dt)
+  cella_dist_vec.record(&dend4a[6].v(1), dt)
+
+  cellb_soma_vec.record(&somab.v(0.5),dt)
+  cellb_prox_vec.record(&dend4b[6].v(0.132), dt)
+  cellb_med_vec.record(&dend4b[6].v(0.485), dt)
+  cellb_dist_vec.record(&dend4b[6].v(1), dt)
+
+  t_vec = new Vector()
+  t_vec.record(&t,dt)
+}
+
+proc resize_vec() {
+  cella_soma_vec.resize(0)
+  cella_prox_vec.resize(0)
+  cella_med_vec.resize(0)
+  cella_dist_vec.resize(0)
+
+  cellb_soma_vec.resize(0)
+  cellb_prox_vec.resize(0)
+  cellb_med_vec.resize(0)
+  cellb_dist_vec.resize(0)
+  t_vec.resize(0)
+  print " run ",resistance+1,"/ 4 begining"
+}
+
+// **********************************
+//
+//             the main loop
+//
+// **********************************
+record_on()
+objref vbox
+vbox = new VBox()
+vbox.intercept(1)
+strdef tmpstr
+
+for resistance=0,3 {
+  g[0].r=resistances.x[resistance]
+  g[1].r=resistances.x[resistance]
+
+  // simulation control
+
+  for i=0,1 stim[i] = new IClamp()
+  somaa stim[0].loc(0.5)
+  somab stim[1].loc(0.5)
+  stim[0].dur=5
+  stim[0].amp=0.1
+
+  // run simulation
+  // tstop=1e4 // 7e4 // 9e4 crashes for some reason
+  init()
+  myrun()
+
+  // make graphs
+  graphs[resistance]=new Graph()
+  cella_soma_vec.line(graphs[resistance],t_vec,2,4)
+  cella_prox_vec.line(graphs[resistance],t_vec,2,3)
+  cella_med_vec.line(graphs[resistance],t_vec,2,2)
+  cella_dist_vec.line(graphs[resistance],t_vec,2,1)
+
+  cellb_soma_vec.line(graphs[resistance],t_vec,3,4)
+  cellb_prox_vec.line(graphs[resistance],t_vec,3,3)
+  cellb_med_vec.line(graphs[resistance],t_vec,3,2)
+  cellb_dist_vec.line(graphs[resistance],t_vec,3,1)
+
+  graphs[resistance].exec_menu("View = plot")
+  graphs[resistance].size(tstop-100,tstop,-80,40)
+
+  sprint(tmpstr,"g_gap = %f pS",1e6/g[0].r)
+  graphs[resistance].label(.3,.95,tmpstr)
+}
+vbox.intercept(0)
+vbox.map()

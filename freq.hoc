@@ -1,0 +1,156 @@
+/*
+WHAT THIS DOES
+
+Will give the period between spikes until period becomes constant.
+It will run the simulation until steady state is reached.
+
+You can customize...
+a) Interval:	How often it checks the phase lag.
+b) Count:	How many equal phase lag values before it is considered steady state.
+c) Threshold:	It will only check the values above the threshold.
+***Note: Interval should be large enough to allow for 2 spikes (for each signal).
+	 A safe rule is Interval > 3*Period.
+
+HOW TO USE
+
+If using this tool individually (not via extra.hoc),
+place this file along with other model hoc files.
+In the oc> prompt, type...
+load_file("phaselag.hoc")
+
+Find the PhaseLag window in 'Tools' -> 'Miscellaneous'
+
+
+ -- Leo Ng
+    June 15, 2004
+*/
+
+
+begintemplate Frequency
+
+// recA records values of vector A.
+// thres stores the values of recA above the threshold value.
+// slope stores the derivatives of signal A.
+// peakA[2] store when the last 2 peaks of signal A occured.
+// p[1] store the last period and p[0] store the second last period.
+public Start, interval, count, threshold, recA, period
+external tstop, run, continuerun
+objref this, recA, thres, slope, scA
+strdef sig, cmd, info
+double peakA[2], p[2]
+
+// Sets the default values and creates the vectors.
+proc init() {
+	period = 0
+	count = 10
+	interval = 300
+	threshold = 30
+
+	recA = new Vector(interval/dt)
+	thres = new Vector()
+	slope = new Vector()
+	scA = new SymChooser("Choose Vector A")
+
+	CreatePanel()
+}
+
+// Creates the GUI.
+proc CreatePanel() {
+	xpanel("Frequency")
+	xpvalue("Interval length (ms)", &interval, 1)
+	xpvalue("Steady State Count", &count, 1)
+	xpvalue("Spike Threshold (units of vector)", &threshold, 1)
+	xvalue("Period (ms)", "period", 2)
+	xvarlabel(info)
+	xvarlabel("")
+	xbutton("Start", "Start()")
+	xpanel()
+}
+
+// Finds where the last two peaks occurred.
+// Returns 1 if successful, 0 if failed.
+func FindPeak() { local i, j
+	thres.clear()
+	slope.clear()
+
+	thres.indvwhere($o1, ">", threshold)
+	if (thres.size() == 0) return 0		// Threshold too high.
+	slope.deriv($o1, dt)
+	$&2[1] = 0
+	$&2[0] = 0
+
+	// Gets the last peak.
+	// If slope changes sign (+ to -), we have a peak.
+	for (i = thres.size() - 1; i >= 0; i -= 1)  {
+		if ((slope.x[thres.x[i]] < 0) && (slope.x[thres.x[i - 1]] >= 0)) {
+			$&2[1] = thres.x[i] * dt
+			break
+		}
+	}
+
+	// Get the second last peak.
+	for (j = i - 1; j >= 0; j -= 1)  {
+		if ((slope.x[thres.x[j]] < 0) && (slope.x[thres.x[j - 1]] >= 0)) {
+			$&2[0] = thres.x[j] * dt
+			break
+		}
+	}
+
+	if (($&2[1] == 0) || ($&2[0] == 0)) return 0 else return 1	// Can't find peaks.
+}
+
+// Finds the phase lag from the two peaks.
+// Phase should be +ve.
+proc Calcperiod() {
+	period = peakA[1] - peakA[0]
+	p[1]=period
+}
+
+// Keeps the simulation running until steady state is reached.
+// Steady state is reached when the same phase values occurred 'count' times.
+proc CheckSteady() { local tmpCount, tmpA, tmpB
+	tmpCount = count - 1
+	while (tmpCount != 0) {
+		recA.clear()
+		continuerun(t + interval)
+		tmpA = FindPeak(recA, &peakA)
+		if (tmpA == 1) {
+			p[0] = p[1]
+			Calcperiod()
+			if (p[0] == p[1]) tmpCount -= 1 else tmpCount = count - 1
+		} else {
+			info = "Error: Interval too small or Threshold too high!!!"
+			return
+		}
+	}
+	info = "Steady State reached."
+}
+
+// Loads the vector choosing menu.
+// Starts the run.
+proc Start() {
+	// Opens the SymChooser menu.
+	// Stores the chosen variable in 'sig'.
+	// Tells recA and recB to record 'sig'.
+	while (!scA.run()) print "Must choose something for Vector A!"
+	scA.text(sig)
+	sprint(cmd, "%s.recA.record(&%s)", this, sig)
+	execute(cmd)
+
+	info = "Waiting for steady state..."
+	tstop = interval
+	p[0] = -2
+	p[1] = -1
+	recA.clear()
+
+	run()	
+	FindPeak(recA, &peakA)
+	Calcperiod()
+	CheckSteady()
+}
+
+endtemplate Frequency
+
+// Adds window to NEURON's main menu.
+objref frequency
+nrnmainmenu_.miscellaneous_add("Frequency", "frequency = new Frequency()")

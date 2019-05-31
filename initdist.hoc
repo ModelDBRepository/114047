@@ -1,0 +1,10 @@
+load_file("nrngui.hoc")
+
+load_file("cella.hoc")
+load_file("cellb.hoc")
+load_file("prog.hoc")
+load_file("gapdist.hoc")
+load_file("gapdist.ses")
+load_file("extras.hoc")
+
+

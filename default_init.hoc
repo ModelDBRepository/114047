@@ -1,0 +1,18 @@
+// Used by state.hoc
+
+proc init() {
+	finitialize(v_init)
+	// fcurrent() // no longer necessary. finitialize now
+	// initializes all conductances and currents as well as states.
+	// Extra initialization should normally go here.
+	// If you change any states or parameters after an finitialize
+	// then you should complete the initialization with
+    /*
+	if (cvode.active()) {
+		cvode.re_init()
+	}else{
+		fcurrent()
+	}
+	frecord_init()	
+    */
+}

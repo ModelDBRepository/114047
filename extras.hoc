@@ -1,0 +1,5 @@
+load_file("state.hoc")
+load_file("phaselag.hoc")
+load_file("xyvalues.hoc")
+load_file("maxvalue.hoc")
+load_file("freq.hoc")

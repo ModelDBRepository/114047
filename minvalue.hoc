@@ -1,0 +1,101 @@
+/*
+WHAT THIS DOES
+
+It searches for the coordinates of the minimum inside the specified interval.
+
+Note:	You need to open a new window for each signal you want to measure values.
+	If recording a vector (as opposed to picking one after), you need to select the vector
+	before hitting "Init & Run"
+
+
+HOW TO USE
+
+If using this tool individually (not via extra.hoc),
+place this file along with other model hoc files.
+In the oc> prompt, type...
+load_file("minvalue.hoc")
+
+Find the Min Value window in 'Tools' -> 'Miscellaneous'
+
+
+-- Leo Ng
+   July 27, 2004
+*/
+
+
+begintemplate MinValue
+
+// rec record values of the signal.
+// vec points to either rec or picked vector hoc_obj
+public Select, min, time, start, finish, rec, box, vec
+external hoc_obj_
+objref this, rec, sc, box, vec
+strdef sig, cmd, title
+
+// Sets the default values and creates the vectors.
+proc init() {
+	time = 0
+	amp = 0
+	start = 0
+	finish = 0
+	sig = ""
+
+	rec = new Vector()
+	vec = rec
+	sc = new SymChooser("Choose signal")
+	CreatePanel()
+}
+
+// Creates the GUI.
+proc CreatePanel() {
+	box = new VBox()
+	box.ref(this)
+	box.intercept(1)
+
+	xpanel("MinValue")
+	xbutton("Select Signal", "Select()")
+	xvarlabel(sig)
+	xvarlabel("")
+	xradiobutton("Use recorded vector (above)", "vec = rec", 1)
+	xradiobutton("Use picked vector", "vec = hoc_obj_[0]", 0)
+	xvarlabel("")
+	xpvalue("Interval Start (ms)", &start, 1, "Find()")
+	xpvalue("Interval End (ms)", &finish, 1, "Find()")
+	xvalue("Min Value", "min", 2)
+	xvalue("at time (ms)", "time", 2)
+	xpanel()
+
+	box.intercept(0)
+	sprint(title, "%s", this)
+	box.map(title)
+}
+
+// Loads the vector choosing menu.
+proc Select() {
+	// Opens the SymChooser menu.
+	// Stores the chosen variable in 'sig'.
+	// Tells rec to record 'sig'.
+	if (sc.run()) {
+		sc.text(sig)
+		sprint(cmd, "%s.rec.record(&%s)", this, sig)
+		execute(cmd)
+	}
+}
+
+// Find Min value and its index
+proc Find() {
+	if (finish > start) {
+		min = vec.min(start / dt, finish / dt)
+		time = vec.min_ind(start / dt, finish / dt) * dt
+	}
+}
+
+endtemplate MinValue
+
+// Adds windows to NEURON's main menu.
+objref minValue
+proc MakeMinValue() {
+	minValue = new MinValue()
+	objref minValue
+}
+nrnmainmenu_.miscellaneous_add("MinValue", "MakeMinValue()")

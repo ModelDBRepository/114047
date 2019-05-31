@@ -1,0 +1,14 @@
+// Used by state.hoc
+
+proc init() {
+	finitialize(v_init)
+	tmpSaveLoadState.state.restore()
+	if (cvode.active()) {
+		cvode.re_init()
+	} else {
+		fcurrent()
+	}
+	frecord_init()
+}
+
+

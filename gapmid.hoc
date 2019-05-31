@@ -1,0 +1,53 @@
+
+objref g[2]
+for i=0,1 g[i] = new gap()
+dend3a[1] g[0].loc(0.514706)	/*distal end of a*/
+dend3b[1] g[1].loc(0.514706)  /*proximal end of b*/
+dend3a[1] g[0].del=1
+dend3b[1] g[1].del=1
+setpointer g[0].vgap, dend3b[1].v(0.514706)
+setpointer g[1].vgap, dend3a[1].v(0.514706)
+
+
+access somaa
+access somab
+
+// run parameters
+//tstop=5
+
+// graphical interface appearance
+//objref grph
+//grph = new Graph()
+//grph.size(0,tstop,-80,40)
+//grph.addexpr("somaa.v(0.5)",1,1)
+//grph.addexpr("somab.v(0.5)",2,1)
+//grph.addexpr("somab.v(.001)",3,1)
+//grph.addexpr("somab.v(.999)",4,1)
+
+
+// simulation control
+
+objref stim[2]
+for i=0,1 stim[i] = new IClamp()
+somaa stim[0].loc(0.5)
+somab stim[1].loc(0.5)
+stim[0].dur=5
+stim[0].amp=.1
+
+
+//proc run() {
+//	for i=0,1 g[i].r=3
+//	finitialize(-65)
+//
+//	grph.begin
+//	while ( t < tstop) {
+//		grph.plot(t)
+//		fadvance()
+//	}
+//	grph.flush()
+//}
+	
+// run simulation
+//run()
+
+

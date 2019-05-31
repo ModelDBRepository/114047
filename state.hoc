@@ -1,0 +1,111 @@
+/*
+WHAT THIS DOES
+
+It allows you save the current state the of simulation
+It also lets you load a previously saved state as an initialization for the simulation.
+
+HOW TO USE
+
+Find the Save/Load State window in 'Tools' -> 'Miscellaneous'
+
+IMPORTANT:	Make sure "state_init0.hoc", "state_init1.hoc", "default_init.hoc"
+		are in the "ExtraTools" folder.
+
+-- Leo Ng
+   July 27, 2004
+*/
+
+
+begintemplate SaveLoadState
+
+// state stores the current state of the simulation.
+public state, box, Save, Load
+objref file, state, box, this
+strdef title
+
+// Creates the vectors.
+// Loads the default initialization procedure
+proc init() {
+	file = new File()
+	state = new SaveState()
+	Default()	
+	CreatePanel()
+}
+
+// Creates the GUI.
+proc CreatePanel() {
+	box = new VBox()
+	box.ref(this)
+	box.intercept(1)
+	
+	xpanel("Save/Load State")
+	xvarlabel("Note: Closing this window")
+	xvarlabel("restores default initialization")
+	xvarlabel("")
+	xbutton("Save State", "Save()")
+	xvarlabel("")
+	xradiobutton("Default Init", "Default()", 1)
+	xradiobutton("Loaded Init: Restore saved time", "SavedTime()", 0)
+	xradiobutton("Loaded Init: Set t = 0", "NewTime()", 0)
+	xbutton("Load State", "Load()")
+	xpanel()
+
+	box.intercept(0)
+	sprint(title, "%s", this)
+	box.map(title)
+	box.dismiss_action("Close()")
+}
+
+// Loads the default initialization procedure (found in "stdrun.hoc").
+proc Default() {
+	execute("~load_file(1, \"ExtraTools/default_init.hoc\")")
+}
+
+// Loads the initialization using the loaded state.
+proc SavedTime() {
+	execute("~load_file(1, \"ExtraTools/state_init1.hoc\")")
+}
+
+// Loads the initialization using the loaded state but set time to 0.
+proc NewTime() {
+	execute("~load_file(1, \"ExtraTools/state_init0.hoc\")")
+}
+
+// Opens the file browser.
+// Writes the saved state to file.
+proc Save() {
+	file.chooser("w", "Select File", "*.dat", "Save", "Cancel", getcwd())
+	if (file.chooser()) {
+		state.save()
+		state.fwrite(file)
+		print "State saved."
+	} else {
+		print "Error! State not saved."
+	}
+}
+
+// Opens the file browser.
+// Loads the saved state from file.
+proc Load() {
+	file.chooser("r", "Select File", "*.dat", "Load", "Cancel", getcwd())
+	if (file.chooser()) {
+		state.fread(file)
+		print "State loaded."
+	} else {
+		print "Error! State not loaded."
+	}
+}
+
+// Make sure default initialization is loaded upon exit.
+proc Close() {
+	Default()
+	box.unmap()
+}
+
+endtemplate SaveLoadState
+
+// Adds windows to NEURON's main menu.
+// tmpSaveLoadState is kept to let the initialization procedures reference the saved state.
+objref tmpSaveLoadState
+nrnmainmenu_.miscellaneous_add("Save/Load State", "tmpSaveLoadState = new SaveLoadState()")
+

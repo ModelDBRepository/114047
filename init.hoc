@@ -1,0 +1,12 @@
+load_file("nrngui.hoc")
+load_file("cella.hoc")
+load_file("cellb.hoc")
+load_file("prog.hoc")
+load_file("extras.hoc")
+
+nrnmainmenu()
+nrncontrolmenu()
+
+xpanel("Saraga et al. 2006")
+xbutton("Generate fig 6","tstop=1e4 xopen(\"fig6.hoc\")")
+xpanel()
